@@ -1,0 +1,7 @@
+name = "background-uploader"
+# Replace these with your actual values
+account_id = ""
+
+[[r2_buckets]]
+binding = "R2_BUCKET"
+bucket_name = ""

@@ -55,7 +55,8 @@
     "typescript": "~5.8.3",
     "unocss": "66.1.0-beta.13",
     "unocss-preset-theme": "^0.14.1",
-    "vite": "^6.3.4"
+    "vite": "^6.3.4",
+    "wrangler": "^4.13.2"
   },
   "lint-staged": {
     "*.{js,ts,astro}": "eslint --fix"

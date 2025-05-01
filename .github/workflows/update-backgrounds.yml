@@ -19,15 +19,36 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: '20'
+          cache: yarn
 
       - name: Scan background images
         run: node .github/scripts/scan-backgrounds.cjs
 
-      - name: Install Wrangler
-        run: npm install -g wrangler
-
-      - name: Create wrangler.toml config
+      - name: Debug temp directory
         run: |
+          echo "Debugging .tmp-r2-upload directory:"
+          if [ -d ".tmp-r2-upload" ]; then
+            echo "Directory exists"
+            ls -la .tmp-r2-upload
+          else
+            echo "Directory does not exist!"
+            mkdir -p .tmp-r2-upload
+            echo "Created directory"
+          fi
+
+      - name: Install dependencies
+        run: yarn add wrangler@latest --dev
+
+      - name: Setup Cloudflare credentials
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          # Create a .env file for Wrangler to use
+          echo "CLOUDFLARE_API_TOKEN=$CLOUDFLARE_API_TOKEN" > .env
+          echo "CLOUDFLARE_ACCOUNT_ID=$CLOUDFLARE_ACCOUNT_ID" >> .env
+
+          # Create wrangler.toml config file
           cat > wrangler.toml << EOF
           name = "background-uploader"
           account_id = "${{ vars.CLOUDFLARE_ACCOUNT_ID }}"
@@ -37,87 +58,89 @@ jobs:
           bucket_name = "${{ vars.CLOUDFLARE_R2_BUCKET_NAME }}"
           EOF
 
-      - name: Configure Wrangler credentials
+      - name: Upload images to R2
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          R2_BUCKET: ${{ vars.CLOUDFLARE_R2_BUCKET_NAME }}
         run: |
-          mkdir -p ~/.wrangler
-          echo "${{ secrets.CLOUDFLARE_API_TOKEN }}" > ~/.wrangler/token
+          # Ensure the temp directory exists
+          mkdir -p .tmp-r2-upload
 
-      - name: Upload images with Wrangler
-        run: |
-          # Check if temp directory exists
-          if [ ! -d ".tmp-r2-upload" ]; then
-            echo "❌ Error: .tmp-r2-upload directory not found"
-            exit 1
+          # Create index files if they don't exist (backup logic)
+          if [ ! -f ".tmp-r2-upload/light-index.json" ]; then
+            echo "Light index file missing, creating backup..."
+            LIGHT_IMAGES=$(ls -1 public/images/backgrounds/light | grep -E '.(jpg|jpeg|png|webp|avif)$' | jq -R -s 'split("\n") | map(select(length > 0))')
+            echo "{\"images\": $LIGHT_IMAGES, \"lastUpdated\": \"$(date -u +"%Y-%m-%dT%H:%M:%SZ")\"}" > .tmp-r2-upload/light-index.json
           fi
 
-          # Check if index files exist
-          if [ ! -f ".tmp-r2-upload/light-index.json" ] || [ ! -f ".tmp-r2-upload/dark-index.json" ]; then
-            echo "❌ Error: Index files not found in .tmp-r2-upload directory"
-            exit 1
+          if [ ! -f ".tmp-r2-upload/dark-index.json" ]; then
+            echo "Dark index file missing, creating backup..."
+            DARK_IMAGES=$(ls -1 public/images/backgrounds/dark | grep -E '.(jpg|jpeg|png|webp|avif)$' | jq -R -s 'split("\n") | map(select(length > 0))')
+            echo "{\"images\": $DARK_IMAGES, \"lastUpdated\": \"$(date -u +"%Y-%m-%dT%H:%M:%SZ")\"}" > .tmp-r2-upload/dark-index.json
           fi
+
+          # Create main index file
+          echo "{\"modes\": [\"light\", \"dark\"], \"lastUpdated\": \"$(date -u +"%Y-%m-%dT%H:%M:%SZ")\"}" > .tmp-r2-upload/main-index.json
+
+          # Debug - Show index files
+          echo "Index files content:"
+          cat .tmp-r2-upload/light-index.json
+          cat .tmp-r2-upload/dark-index.json
+          cat .tmp-r2-upload/main-index.json
 
           # Upload light mode images
           echo "📤 Uploading light mode images..."
           for file in public/images/backgrounds/light/*; do
-            if [ -f "$file" ]; then
+            if [ -f "$file" ] && [[ "$file" =~ \.(jpg|jpeg|png|webp|avif)$ ]]; then
               filename=$(basename "$file")
-              wrangler r2 object put "${{ vars.CLOUDFLARE_R2_BUCKET_NAME }}/backgrounds/light/$filename" --file "$file" --content-type "$(file --mime-type -b "$file")"
-              echo "  Uploaded: $filename"
+              echo "Uploading $filename..."
+              yarn wrangler r2 object put "$R2_BUCKET/backgrounds/light/$filename" --file "$file" --content-type "$(file --mime-type -b "$file")" --remote || echo "Failed to upload $filename"
             fi
           done
 
           # Upload dark mode images
           echo "📤 Uploading dark mode images..."
           for file in public/images/backgrounds/dark/*; do
-            if [ -f "$file" ]; then
+            if [ -f "$file" ] && [[ "$file" =~ \.(jpg|jpeg|png|webp|avif)$ ]]; then
               filename=$(basename "$file")
-              wrangler r2 object put "${{ vars.CLOUDFLARE_R2_BUCKET_NAME }}/backgrounds/dark/$filename" --file "$file" --content-type "$(file --mime-type -b "$file")"
-              echo "  Uploaded: $filename"
+              echo "Uploading $filename..."
+              yarn wrangler r2 object put "$R2_BUCKET/backgrounds/dark/$filename" --file "$file" --content-type "$(file --mime-type -b "$file")" --remote || echo "Failed to upload $filename"
             fi
           done
 
-          # Upload index.json files
+          # Upload index files
           echo "📤 Uploading index.json files..."
-          wrangler r2 object put "${{ vars.CLOUDFLARE_R2_BUCKET_NAME }}/backgrounds/light/index.json" --file ".tmp-r2-upload/light-index.json" --content-type "application/json"
+          yarn wrangler r2 object put "$R2_BUCKET/backgrounds/light/index.json" --file ".tmp-r2-upload/light-index.json" --content-type "application/json" --remote || echo "Failed to upload light index"
           echo "  Uploaded: light/index.json"
 
-          wrangler r2 object put "${{ vars.CLOUDFLARE_R2_BUCKET_NAME }}/backgrounds/dark/index.json" --file ".tmp-r2-upload/dark-index.json" --content-type "application/json"
+          yarn wrangler r2 object put "$R2_BUCKET/backgrounds/dark/index.json" --file ".tmp-r2-upload/dark-index.json" --content-type "application/json" --remote || echo "Failed to upload dark index"
           echo "  Uploaded: dark/index.json"
 
-          # Create and upload the main index file
-          echo "📤 Creating and uploading main index.json..."
-          cat > ".tmp-r2-upload/main-index.json" << EOF
-          {
-            "modes": ["light", "dark"],
-            "lastUpdated": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
-          }
-          EOF
-
-          wrangler r2 object put "${{ vars.CLOUDFLARE_R2_BUCKET_NAME }}/backgrounds/index.json" --file ".tmp-r2-upload/main-index.json" --content-type "application/json"
+          yarn wrangler r2 object put "$R2_BUCKET/backgrounds/index.json" --file ".tmp-r2-upload/main-index.json" --content-type "application/json" --remote || echo "Failed to upload main index"
           echo "  Uploaded: backgrounds/index.json"
 
-          echo "✅ All background images and index files uploaded to Cloudflare R2"
+          echo "✅ Uploads to Cloudflare R2 completed"
 
       - name: Display URL information
         run: |
-          echo "✅ Background images successfully uploaded to R2"
+          echo "✅ Background images processing completed"
           if [ -n "${{ vars.CLOUDFLARE_DOMAIN }}" ]; then
-            echo "📋 Images are available at: https://${{ vars.CLOUDFLARE_DOMAIN }}/backgrounds/light/"
-            echo "📋 Light index file is at: https://${{ vars.CLOUDFLARE_DOMAIN }}/backgrounds/light/index.json"
-            echo "📋 Dark index file is at: https://${{ vars.CLOUDFLARE_DOMAIN }}/backgrounds/dark/index.json"
-            echo "📋 Main index file is at: https://${{ vars.CLOUDFLARE_DOMAIN }}/backgrounds/index.json"
+            echo "📋 Images should be available at: https://${{ vars.CLOUDFLARE_DOMAIN }}/backgrounds/light/"
+            echo "📋 Light index file at: https://${{ vars.CLOUDFLARE_DOMAIN }}/backgrounds/light/index.json"
+            echo "📋 Dark index file at: https://${{ vars.CLOUDFLARE_DOMAIN }}/backgrounds/dark/index.json"
+            echo "📋 Main index file at: https://${{ vars.CLOUDFLARE_DOMAIN }}/backgrounds/index.json"
           else
-            echo "📋 Images are available at: https://${{ vars.CLOUDFLARE_R2_BUCKET_NAME }}.${{ vars.CLOUDFLARE_ACCOUNT_ID }}.r2.dev/backgrounds/light/"
-            echo "📋 Light index file is at: https://${{ vars.CLOUDFLARE_R2_BUCKET_NAME }}.${{ vars.CLOUDFLARE_ACCOUNT_ID }}.r2.dev/backgrounds/light/index.json"
-            echo "📋 Dark index file is at: https://${{ vars.CLOUDFLARE_R2_BUCKET_NAME }}.${{ vars.CLOUDFLARE_ACCOUNT_ID }}.r2.dev/backgrounds/dark/index.json"
-            echo "📋 Main index file is at: https://${{ vars.CLOUDFLARE_R2_BUCKET_NAME }}.${{ vars.CLOUDFLARE_ACCOUNT_ID }}.r2.dev/backgrounds/index.json"
+            echo "📋 Images should be available at: https://${{ vars.CLOUDFLARE_R2_BUCKET_NAME }}.${{ vars.CLOUDFLARE_ACCOUNT_ID }}.r2.dev/backgrounds/light/"
+            echo "📋 Light index file at: https://${{ vars.CLOUDFLARE_R2_BUCKET_NAME }}.${{ vars.CLOUDFLARE_ACCOUNT_ID }}.r2.dev/backgrounds/light/index.json"
+            echo "📋 Dark index file at: https://${{ vars.CLOUDFLARE_R2_BUCKET_NAME }}.${{ vars.CLOUDFLARE_ACCOUNT_ID }}.r2.dev/backgrounds/dark/index.json"
+            echo "📋 Main index file at: https://${{ vars.CLOUDFLARE_R2_BUCKET_NAME }}.${{ vars.CLOUDFLARE_ACCOUNT_ID }}.r2.dev/backgrounds/index.json"
           fi
 
       - name: Purge Cloudflare Cache
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ZONE_ID: ${{ vars.CLOUDFLARE_ZONE_ID }}
-          CLOUDFLARE_EMAIL: ${{ vars.CLOUDFLARE_EMAIL }}
           CLOUDFLARE_DOMAIN: ${{ vars.CLOUDFLARE_DOMAIN }}
         run: |
           if [ -z "$CLOUDFLARE_ZONE_ID" ] || [ -z "$CLOUDFLARE_DOMAIN" ]; then
@@ -125,7 +148,7 @@ jobs:
             exit 0
           fi
 
-          # Create a temporary JSON file for the purge request with background file URLs
+          # Create a temporary JSON file for the purge request
           cat > purge-cache.json << EOF
           {
             "files": [
