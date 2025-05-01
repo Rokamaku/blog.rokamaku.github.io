@@ -100,6 +100,9 @@ const filteredHeadings = headings.filter(heading =>
 /* Initial collapsed state with zero height grid row */
 .accordion-wrapper {
   --at-apply: 'grid rows-[0fr] duration-300 ease-in-out';
+  visibility: hidden;
+  opacity: 0;
+  transition: visibility 0.3s, opacity 0.3s ease-in-out, grid-template-rows 0.3s ease-in-out;
 }
 
 .accordion-content {
@@ -109,6 +112,8 @@ const filteredHeadings = headings.filter(heading =>
 /* When toggle is checked, expand the wrapper to show content */
 .accordion-toggle:checked ~ .accordion-wrapper {
   grid-template-rows: 1fr;
+  visibility: visible;
+  opacity: 1;
 }
 
 .accordion-toggle:checked ~ .accordion-wrapper .accordion-content {
@@ -118,10 +123,14 @@ const filteredHeadings = headings.filter(heading =>
 @media (min-width: 1536px) {
   .accordion-wrapper {
     grid-template-rows: 1fr;
+    visibility: visible;
+    opacity: 1;
   }
 
   .accordion-toggle:checked ~ .accordion-wrapper {
     grid-template-rows: 0fr;
+    visibility: hidden;
+    opacity: 0;
   }
 
   .accordion-content {

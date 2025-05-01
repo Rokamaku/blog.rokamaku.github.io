@@ -50,5 +50,21 @@ const MarginBottom = isPost && themeConfig.comment?.enabled
     <Scrollbar />
     <Button supportedLangs={supportedLangs} />
     <PhotoSwipe />
+
+    <!-- Background change button -->
+    <button
+      onclick="window.changeBackground()"
+      class="fixed bottom-4 right-4 z-50 border border-white/50 rounded-full bg-white/30 p-2 shadow-lg backdrop-blur-md transition-all duration-300 hover:bg-white/50"
+      title="Change background"
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+        <circle cx="8.5" cy="8.5" r="1.5"></circle>
+        <polyline points="21 15 16 10 5 21"></polyline>
+      </svg>
+    </button>
+
+    <!-- Background randomizer script -->
+    <script is:inline src="/js/random-background.js"></script>
   </body>
 </html>

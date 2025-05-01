@@ -7,7 +7,7 @@ import {
   transformerVariantGroup,
 } from 'unocss'
 import presetTheme from 'unocss-preset-theme'
-import { themeConfig } from './src/config.ts'
+import { themeConfig } from './src/config'
 
 const { light, dark } = themeConfig.color
 
@@ -28,7 +28,7 @@ export default defineConfig({
           },
         },
       },
-    }) as Preset<object>,
+    }) as unknown as Preset,
   ],
   theme: {
     colors: {
@@ -49,7 +49,7 @@ export default defineConfig({
   shortcuts: {
     'uno-desktop-column': 'fixed w-14rem right-[max(5.625rem,calc(50vw-34.375rem))]',
     'uno-tags-style': 'inline-block whitespace-nowrap border border-secondary/25 rounded-full px-3.2 py-0.7 c-secondary transition-colors hover:(border-secondary/75 text-primary)',
-    'uno-decorative-line': 'h-0.25 w-10 bg-secondary/25 mb-4.5 lg:(w-11 mb-6)',
+    'uno-decorative-line': 'h-0.5 w-10 bg-secondary/50 mb-4.5 lg:(w-11 mb-6)',
     'uno-tags-wrapper': 'flex flex-wrap gap-x-3 gap-y-3.2',
   },
   rules: [

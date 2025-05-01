@@ -125,6 +125,56 @@ function initTheme(doc = document) {
   if (metaTheme) {
     metaTheme.setAttribute('content', isDark ? darkMode : lightMode)
   }
+
+  // Update container background based on theme
+  setTimeout(() => {
+    const mainContainer = doc.getElementById('main-container')
+    if (mainContainer) {
+      if (isDark) {
+        mainContainer.style.backgroundColor = 'rgba(30, 30, 50, 0.9)'
+        mainContainer.style.boxShadow = '0 8px 32px rgba(0, 0, 0, 0.5)'
+        mainContainer.style.backdropFilter = 'blur(15px)'
+        mainContainer.style.border = '1px solid rgba(80, 80, 120, 0.5)'
+      }
+      else {
+        mainContainer.style.backgroundColor = 'rgba(255, 255, 255, 0.95)'
+        mainContainer.style.boxShadow = '0 8px 32px rgba(0, 0, 0, 0.3)'
+        mainContainer.style.backdropFilter = 'blur(15px)'
+        mainContainer.style.border = '1px solid rgba(255, 255, 255, 0.5)'
+      }
+    }
+
+    // Update post list items if they exist
+    const postItems = doc.querySelectorAll('ul > li')
+    if (postItems.length > 0) {
+      postItems.forEach((item) => {
+        if (isDark) {
+          item.style.backgroundColor = 'rgba(40, 40, 70, 0.9)'
+          item.style.boxShadow = '0 4px 16px rgba(0, 0, 0, 0.4)'
+          item.style.border = '1px solid rgba(80, 80, 120, 0.5)'
+
+          // Update title links
+          const links = item.querySelectorAll('a')
+          links.forEach((link) => {
+            link.style.color = '#fff'
+            link.style.textShadow = '0 1px 2px rgba(0, 0, 0, 0.8)'
+          })
+        }
+        else {
+          item.style.backgroundColor = 'rgba(255, 255, 255, 0.9)'
+          item.style.boxShadow = '0 4px 16px rgba(0, 0, 0, 0.2)'
+          item.style.border = '1px solid rgba(255, 255, 255, 0.5)'
+
+          // Update title links
+          const links = item.querySelectorAll('a')
+          links.forEach((link) => {
+            link.style.color = '#333'
+            link.style.textShadow = '0 1px 1px rgba(255, 255, 255, 0.5)'
+          })
+        }
+      })
+    }
+  }, 100)
 }
 
 // Function 1: Initialize theme on first load
