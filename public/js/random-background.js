@@ -1,5 +1,5 @@
 // Base paths for light and dark background folders on Cloudflare R2
-const r2BaseUrl = window.siteConfig?.r2BucketUrl || 'https://YOUR_R2_BUCKET_URL.r2.dev'
+const r2BaseUrl = import.meta.env?.CLOUDFLARE_DOMAIN
 const lightBackgroundPath = `${r2BaseUrl}/backgrounds/light/`
 const darkBackgroundPath = `${r2BaseUrl}/backgrounds/dark/`
 

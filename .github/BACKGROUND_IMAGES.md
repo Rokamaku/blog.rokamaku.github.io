@@ -26,6 +26,8 @@ Variables:
 - `CLOUDFLARE_ACCOUNT_ID`: Your Cloudflare account ID
 - `CLOUDFLARE_R2_BUCKET_NAME`: The name of your R2 bucket
 - `CLOUDFLARE_DOMAIN`: Your domain for serving assets
+- `CLOUDFLARE_ZONE_ID`: Your Cloudflare Zone ID (for cache purging)
+- `CLOUDFLARE_EMAIL`: Your Cloudflare account email
 
 Secrets:
 - `CLOUDFLARE_API_TOKEN`: Your Cloudflare API token with R2 permissions
@@ -48,19 +50,35 @@ const config = {
 
 The automation uses Cloudflare Wrangler to upload files to R2 directly, which is more efficient than using the AWS S3 compatibility layer. This approach requires only your Cloudflare account ID and API token.
 
+## Scripts
+
+The automation uses the following scripts:
+
+- `.github/scripts/scan-backgrounds.cjs`: Scans the background directories and generates index.json files
+- `.github/scripts/upload-to-r2.sh`: A utility script for manual uploads to R2
+- `.github/scripts/update-backgrounds.sh`: Master script that runs the entire pipeline locally
+
 ## Usage
 
 The workflow triggers automatically when changes are made to the background image directories. You can also trigger it manually from the Actions tab in GitHub.
 
 ## Manual Testing
 
-To manually test the image scanning script locally:
+To run the entire pipeline locally with one command:
 
 ```bash
-node .github/scripts/test-background-scanning.cjs
+.github/scripts/update-backgrounds.sh YOUR_BUCKET_NAME YOUR_ACCOUNT_ID [YOUR_DOMAIN]
 ```
 
-To manually upload images using Wrangler:
+Or you can run the individual steps:
+
+1. To test just the image scanning:
+
+```bash
+node .github/scripts/scan-backgrounds.cjs
+```
+
+2. To manually upload images after scanning:
 
 ```bash
 .github/scripts/upload-to-r2.sh YOUR_BUCKET_NAME YOUR_ACCOUNT_ID [YOUR_DOMAIN]

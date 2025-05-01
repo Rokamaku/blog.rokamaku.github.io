@@ -10,6 +10,7 @@ jobs:
   update-backgrounds:
     environment: github-pages
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -18,57 +19,6 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: '20'
-
-      - name: Create scripts directory
-        run: mkdir -p .github/scripts
-
-      - name: Create scan script
-        run: |
-          cat > .github/scripts/scan-backgrounds.cjs << 'EOF'
-          const fs = require('fs');
-          const path = require('path');
-
-          // Directories to scan
-          const lightDir = 'public/images/backgrounds/light';
-          const darkDir = 'public/images/backgrounds/dark';
-
-          // Function to scan a directory and create index.json
-          function scanDirectory(dirPath) {
-            // Get all files with supported image extensions
-            const validExtensions = ['.jpg', '.jpeg', '.png', '.webp', '.avif'];
-            const images = fs.readdirSync(dirPath)
-              .filter(file => {
-                const ext = path.extname(file).toLowerCase();
-                return validExtensions.includes(ext) && fs.statSync(path.join(dirPath, file)).isFile();
-              });
-
-            // Create index.json content
-            const indexContent = {
-              images: images,
-              lastUpdated: new Date().toISOString()
-            };
-
-            // Create temp directory if it doesn't exist
-            const tempDir = '.tmp-r2-upload';
-            if (!fs.existsSync(tempDir)) {
-              fs.mkdirSync(tempDir, { recursive: true });
-            }
-
-            // Write index.json to temp directory
-            const indexFilePath = path.join(tempDir, path.basename(dirPath) + '-index.json');
-            fs.writeFileSync(indexFilePath, JSON.stringify(indexContent, null, 2));
-
-            console.log(`✅ Created ${indexFilePath} with ${images.length} images`);
-            return { images, indexFilePath };
-          }
-
-          // Scan both directories
-          const lightResult = scanDirectory(lightDir);
-          const darkResult = scanDirectory(darkDir);
-
-          console.log('Light images:', lightResult.images);
-          console.log('Dark images:', darkResult.images);
-          EOF
 
       - name: Scan background images
         run: node .github/scripts/scan-backgrounds.cjs
@@ -94,6 +44,18 @@ jobs:
 
       - name: Upload images with Wrangler
         run: |
+          # Check if temp directory exists
+          if [ ! -d ".tmp-r2-upload" ]; then
+            echo "❌ Error: .tmp-r2-upload directory not found"
+            exit 1
+          fi
+
+          # Check if index files exist
+          if [ ! -f ".tmp-r2-upload/light-index.json" ] || [ ! -f ".tmp-r2-upload/dark-index.json" ]; then
+            echo "❌ Error: Index files not found in .tmp-r2-upload directory"
+            exit 1
+          fi
+
           # Upload light mode images
           echo "📤 Uploading light mode images..."
           for file in public/images/backgrounds/light/*; do
@@ -117,7 +79,22 @@ jobs:
           # Upload index.json files
           echo "📤 Uploading index.json files..."
           wrangler r2 object put "${{ vars.CLOUDFLARE_R2_BUCKET_NAME }}/backgrounds/light/index.json" --file ".tmp-r2-upload/light-index.json" --content-type "application/json"
+          echo "  Uploaded: light/index.json"
+
           wrangler r2 object put "${{ vars.CLOUDFLARE_R2_BUCKET_NAME }}/backgrounds/dark/index.json" --file ".tmp-r2-upload/dark-index.json" --content-type "application/json"
+          echo "  Uploaded: dark/index.json"
+
+          # Create and upload the main index file
+          echo "📤 Creating and uploading main index.json..."
+          cat > ".tmp-r2-upload/main-index.json" << EOF
+          {
+            "modes": ["light", "dark"],
+            "lastUpdated": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+          }
+          EOF
+
+          wrangler r2 object put "${{ vars.CLOUDFLARE_R2_BUCKET_NAME }}/backgrounds/index.json" --file ".tmp-r2-upload/main-index.json" --content-type "application/json"
+          echo "  Uploaded: backgrounds/index.json"
 
           echo "✅ All background images and index files uploaded to Cloudflare R2"
 
@@ -126,10 +103,14 @@ jobs:
           echo "✅ Background images successfully uploaded to R2"
           if [ -n "${{ vars.CLOUDFLARE_DOMAIN }}" ]; then
             echo "📋 Images are available at: https://${{ vars.CLOUDFLARE_DOMAIN }}/backgrounds/light/"
-            echo "📋 Index file is at: https://${{ vars.CLOUDFLARE_DOMAIN }}/backgrounds/light/index.json"
+            echo "📋 Light index file is at: https://${{ vars.CLOUDFLARE_DOMAIN }}/backgrounds/light/index.json"
+            echo "📋 Dark index file is at: https://${{ vars.CLOUDFLARE_DOMAIN }}/backgrounds/dark/index.json"
+            echo "📋 Main index file is at: https://${{ vars.CLOUDFLARE_DOMAIN }}/backgrounds/index.json"
           else
             echo "📋 Images are available at: https://${{ vars.CLOUDFLARE_R2_BUCKET_NAME }}.${{ vars.CLOUDFLARE_ACCOUNT_ID }}.r2.dev/backgrounds/light/"
-            echo "📋 Index file is at: https://${{ vars.CLOUDFLARE_R2_BUCKET_NAME }}.${{ vars.CLOUDFLARE_ACCOUNT_ID }}.r2.dev/backgrounds/light/index.json"
+            echo "📋 Light index file is at: https://${{ vars.CLOUDFLARE_R2_BUCKET_NAME }}.${{ vars.CLOUDFLARE_ACCOUNT_ID }}.r2.dev/backgrounds/light/index.json"
+            echo "📋 Dark index file is at: https://${{ vars.CLOUDFLARE_R2_BUCKET_NAME }}.${{ vars.CLOUDFLARE_ACCOUNT_ID }}.r2.dev/backgrounds/dark/index.json"
+            echo "📋 Main index file is at: https://${{ vars.CLOUDFLARE_R2_BUCKET_NAME }}.${{ vars.CLOUDFLARE_ACCOUNT_ID }}.r2.dev/backgrounds/index.json"
           fi
 
       - name: Purge Cloudflare Cache
@@ -139,23 +120,26 @@ jobs:
           CLOUDFLARE_EMAIL: ${{ vars.CLOUDFLARE_EMAIL }}
           CLOUDFLARE_DOMAIN: ${{ vars.CLOUDFLARE_DOMAIN }}
         run: |
-          # Purge the cache for the specific PDF file
-          PDF_FILENAME="${{ steps.get-pdf-filename.outputs.pdf_filename }}"
-          if [ -z "$PDF_FILENAME" ]; then
-            PDF_FILENAME="CV_AnhBui_FullStackDev.pdf"
+          if [ -z "$CLOUDFLARE_ZONE_ID" ] || [ -z "$CLOUDFLARE_DOMAIN" ]; then
+            echo "Skipping cache purge - Required Cloudflare variables not set"
+            exit 0
           fi
 
-          # Create full URL for the file
-          FULL_URL="https://$CLOUDFLARE_DOMAIN/$PDF_FILENAME"
+          # Create a temporary JSON file for the purge request with background file URLs
+          cat > purge-cache.json << EOF
+          {
+            "files": [
+              "https://$CLOUDFLARE_DOMAIN/backgrounds/light/index.json",
+              "https://$CLOUDFLARE_DOMAIN/backgrounds/dark/index.json",
+              "https://$CLOUDFLARE_DOMAIN/backgrounds/index.json"
+            ]
+          }
+          EOF
 
-          # Create a temporary JSON file for the purge request with full URLs
-          echo '{"files":["'$FULL_URL'"]}' > purge-cache.json
-
-          # Make the API call to purge the cache using Global API Key
+          # Make the API call to purge the cache
           curl -X POST "https://api.cloudflare.com/client/v4/zones/$CLOUDFLARE_ZONE_ID/purge_cache" \
             -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
             -H "Content-Type: application/json" \
             --data @purge-cache.json
 
-          # Print response for debugging
-          echo "Cache purge attempted for $FULL_URL"
+          echo "✅ Cache purge requested for background files"

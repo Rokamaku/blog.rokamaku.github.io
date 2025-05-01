@@ -20,14 +20,21 @@ concurrency:
 
 jobs:
   build:
-    environment:
-      name: github-pages
     runs-on: ubuntu-latest
+    environment: github-pages
+
+    env:
+      CLOUDFLARE_DOMAIN: ${{ vars.CLOUDFLARE_DOMAIN }}
+
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+
       - name: Install, build, and upload your site
         uses: withastro/action@v3
+        with:
+          # Optional but recommended
+          node-version: 20
 
   deploy:
     needs: build

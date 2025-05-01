@@ -1,9 +1,8 @@
 /**
- * Local test script for background image scanning
- * Run with: node .github/scripts/test-background-scanning.cjs
+ * Scan Background Images Script
  *
- * This script scans the backgrounds directories and creates index.json files
- * in a temp directory, simulating what the GitHub Action would do.
+ * This script scans the background image directories and creates index.json files
+ * for both light and dark mode images. Used by the GitHub Action workflow.
  */
 
 const fs = require('node:fs')
@@ -54,17 +53,23 @@ function scanDirectory(dirPath) {
   return { images, indexFilePath }
 }
 
-// Scan both directories
-console.log('\n📁 Scanning Light Mode Background Images:')
-const lightResult = scanDirectory(lightDir)
+// Main function
+function main() {
+  console.log('\n📁 Scanning Light Mode Background Images:')
+  const lightResult = scanDirectory(lightDir)
 
-console.log('\n📁 Scanning Dark Mode Background Images:')
-const darkResult = scanDirectory(darkDir)
+  console.log('\n📁 Scanning Dark Mode Background Images:')
+  const darkResult = scanDirectory(darkDir)
 
-console.log('\n✅ Summary:')
-console.log(`Light mode images: ${lightResult.images.length}`)
-console.log(`Dark mode images: ${darkResult.images.length}`)
-console.log(`\nTo see the generated index files, check the .tmp-r2-upload directory.`)
-console.log(`\nIn a real deployment, these would be uploaded to Cloudflare R2 at:`)
-console.log(`- /backgrounds/light/index.json`)
-console.log(`- /backgrounds/dark/index.json`)
+  console.log('\n✅ Summary:')
+  console.log(`Light mode images: ${lightResult.images.length}`)
+  console.log(`Dark mode images: ${darkResult.images.length}`)
+
+  return {
+    lightImages: lightResult.images,
+    darkImages: darkResult.images,
+  }
+}
+
+// Run the script
+main()

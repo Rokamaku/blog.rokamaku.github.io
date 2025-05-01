@@ -35,9 +35,9 @@ binding = "R2_BUCKET"
 bucket_name = "$CLOUDFLARE_R2_BUCKET_NAME"
 EOF
 
-# First, generate the index files
+# Generate the index files
 echo "📁 Generating index.json files..."
-node .github/scripts/test-background-scanning.cjs
+node .github/scripts/scan-backgrounds.cjs
 
 # Check if the script was successful
 if [ ! -f .tmp-r2-upload/light-index.json ] || [ ! -f .tmp-r2-upload/dark-index.json ]; then
