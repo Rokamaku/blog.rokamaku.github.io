@@ -1,5 +1,5 @@
 // Base paths for light and dark background folders on Cloudflare R2
-const r2BaseUrl = `https://${window.ENV_CLOUDFLARE_DOMAIN}` || ''
+const r2BaseUrl = window.ENV_CLOUDFLARE_DOMAIN ? `https://${window.ENV_CLOUDFLARE_DOMAIN}` : ''
 const lightBackgroundPath = `${r2BaseUrl}/backgrounds/light/`
 const darkBackgroundPath = `${r2BaseUrl}/backgrounds/dark/`
 
@@ -7,8 +7,48 @@ const darkBackgroundPath = `${r2BaseUrl}/backgrounds/dark/`
 let lightBackgroundImages = []
 let darkBackgroundImages = []
 
+// Create and append base style for background transitions if not already present
+function setupBackgroundTransitions() {
+  if (!document.getElementById('background-transition-style')) {
+    const transitionStyle = document.createElement('style')
+    transitionStyle.id = 'background-transition-style'
+    transitionStyle.textContent = `
+      html::before,
+      html.dark::before {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: -1;
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        transition: opacity 0.8s ease;
+        opacity: 1;
+      }
+    `
+    document.head.appendChild(transitionStyle)
+
+    // Force the creation of the pseudo-elements if they don't exist yet
+    if (!document.getElementById('background-placeholders')) {
+      const placeholderStyle = document.createElement('style')
+      placeholderStyle.id = 'background-placeholders'
+      placeholderStyle.textContent = `
+        html::before { background-color: rgba(240, 240, 240, 0.1); }
+        html.dark::before { background-color: rgba(20, 20, 20, 0.1); }
+      `
+      document.head.appendChild(placeholderStyle)
+    }
+  }
+}
+
 // Function to fetch available images from a directory
 async function fetchBackgroundImages() {
+  // Setup transition styles first
+  setupBackgroundTransitions()
+
   try {
     // Fetch light mode images
     const lightResponse = await fetch(`${lightBackgroundPath}index.json`)
@@ -66,46 +106,52 @@ function setRandomBackground() {
   const randomIndex = Math.floor(Math.random() * imageArray.length)
   const selectedImage = imageArray[randomIndex]
 
-  // Create a CSS rule to override the background image
-  const styleSheet = document.createElement('style')
-  styleSheet.id = 'random-background-style'
-  styleSheet.textContent = `
-    html${isDarkMode ? '.dark' : ''}::before {
-      background-image: url('${selectedImage}') !important;
-    }
-  `
-
-  // Remove any existing style element
-  const existingStyle = document.getElementById('random-background-style')
-  if (existingStyle) {
-    existingStyle.remove()
-  }
-
-  // Append the new style to the head
-  document.head.appendChild(styleSheet)
+  // Apply with fade animation
+  setBackgroundWithAnimation(selectedImage, isDarkMode)
 
   // Store the chosen image in local storage
   localStorage.setItem(isDarkMode ? 'selectedDarkBackground' : 'selectedLightBackground', selectedImage)
 }
 
-// Load background from storage if it exists
+// Load background from storage if it exists, or set a random one
 function loadStoredBackground() {
   const isDarkMode = document.documentElement.classList.contains('dark')
   const storedKey = isDarkMode ? 'selectedDarkBackground' : 'selectedLightBackground'
   const storedBackground = localStorage.getItem(storedKey)
 
   if (storedBackground) {
-    // Use the stored background
-    const styleSheet = document.createElement('style')
-    styleSheet.id = 'random-background-style'
-    styleSheet.textContent = `
-      html${isDarkMode ? '.dark' : ''}::before {
-        background-image: url('${storedBackground}') !important;
+    // Use the stored background with animation
+    setBackgroundWithAnimation(storedBackground, isDarkMode)
+  }
+  else {
+    // No stored background for this theme, set a random one
+    setRandomBackground()
+  }
+}
+
+// Helper function to apply background with fade animation
+function setBackgroundWithAnimation(imageUrl, isDarkMode) {
+  // Get existing style element or create new one
+  let styleElement = document.getElementById('random-background-style')
+  if (!styleElement) {
+    styleElement = document.createElement('style')
+    styleElement.id = 'random-background-style'
+    document.head.appendChild(styleElement)
+  }
+
+  // Start the fade-out animation
+  const selector = `html${isDarkMode ? '.dark' : ''}::before`
+  document.querySelector(selector)?.style.setProperty('opacity', '0')
+
+  // After fade-out completes, update the background image and fade back in
+  setTimeout(() => {
+    styleElement.textContent = `
+      ${selector} {
+        background-image: url('${imageUrl}') !important;
       }
     `
-    document.head.appendChild(styleSheet)
-  }
-  // Don't set a random background if no stored one exists
+    document.querySelector(selector)?.style.setProperty('opacity', '1')
+  }, 400) // Half of the total transition time for a smooth crossfade
 }
 
 // Fetch background images when the page loads
