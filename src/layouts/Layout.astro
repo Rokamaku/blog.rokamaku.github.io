@@ -65,7 +65,7 @@ const MarginBottom = isPost && themeConfig.comment?.enabled
     </button>
 
     <!-- Background randomizer script -->
-    <script is:inline define:vars={{ cloudflareUrl: import.meta.env.CLOUDFLARE_DOMAIN || '' }}>
+    <script is:inline define:vars={{ cloudflareUrl: import.meta.env.PUBLIC_CLOUDFLARE_DOMAIN || '' }}>
       // Set environment variables for non-module scripts
       window.ENV_CLOUDFLARE_DOMAIN = cloudflareUrl
     </script>
