@@ -2,9 +2,11 @@
 title: First post
 published: 2025-05-02
 tags:
-  - Test
+  - Miscellaneous
+description: First post
+draft: true
+pin: 0
 toc: false
-lang: en
+lang: vi
 abbrlink: first-post
 ---
-This is my first post

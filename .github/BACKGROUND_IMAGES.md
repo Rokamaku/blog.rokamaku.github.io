@@ -5,6 +5,7 @@ This document explains how to set up and use the background image automation fea
 ## Overview
 
 The GitHub Action workflow in this repository automates:
+
 1. Scanning background images in the `public/images/backgrounds/light` and `public/images/backgrounds/dark` directories
 2. Generating `index.json` files with lists of available images
 3. Uploading all images and index files to Cloudflare R2 (index files are only stored on R2, not in the source code)
@@ -23,6 +24,7 @@ The GitHub Action workflow in this repository automates:
 Add the following to your GitHub repository:
 
 Variables:
+
 - `CLOUDFLARE_ACCOUNT_ID`: Your Cloudflare account ID
 - `CLOUDFLARE_R2_BUCKET_NAME`: The name of your R2 bucket
 - `CLOUDFLARE_DOMAIN`: Your domain for serving assets
@@ -30,6 +32,7 @@ Variables:
 - `CLOUDFLARE_EMAIL`: Your Cloudflare account email
 
 Secrets:
+
 - `CLOUDFLARE_API_TOKEN`: Your Cloudflare API token with R2 permissions
 
 ### 3. Configure the site
@@ -39,11 +42,11 @@ Update the R2 bucket URL in `public/js/config.js`:
 ```js
 const config = {
   // If using a custom domain:
-  r2BucketUrl: 'https://YOUR_DOMAIN',
+  r2BucketUrl: "https://YOUR_DOMAIN",
 
   // Or if using the default R2 domain:
   // r2BucketUrl: 'https://YOUR_BUCKET_NAME.YOUR_ACCOUNT_ID.r2.dev',
-}
+};
 ```
 
 ## How It Works

@@ -5,6 +5,7 @@ This document explains how to deploy your blog to GitHub Pages and integrate it 
 ## Overview
 
 The GitHub Action workflow in this repository automates:
+
 1. Building your blog for production
 2. Deploying the built files to GitHub Pages
 3. Configuring the R2 background image URLs automatically during the build process
@@ -24,6 +25,7 @@ The GitHub Action workflow in this repository automates:
 In your repository settings, add these:
 
 Variables:
+
 - `CLOUDFLARE_ACCOUNT_ID`: Your Cloudflare account ID
 - `CLOUDFLARE_R2_BUCKET_NAME`: The name of your R2 bucket
 - `CLOUDFLARE_DOMAIN`: Your domain for serving assets
@@ -31,6 +33,7 @@ Variables:
 - `CLOUDFLARE_EMAIL`: Your Cloudflare account email
 
 Secrets:
+
 - `CLOUDFLARE_API_TOKEN`: Your Cloudflare API token with R2 permissions
 
 ### 3. Configure Branch
@@ -47,6 +50,7 @@ on:
 ## How It Works
 
 1. When you push to your main branch, the workflow automatically:
+
    - Checks out your code
    - Sets up Node.js
    - Installs dependencies
