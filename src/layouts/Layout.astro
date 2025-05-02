@@ -67,7 +67,7 @@ const MarginBottom = isPost && themeConfig.comment?.enabled
     <!-- Background randomizer script -->
     <script is:inline define:vars={{ cloudflareUrl: import.meta.env.PUBLIC_CLOUDFLARE_DOMAIN || '' }}>
       // Set environment variables for non-module scripts
-      window.ENV_CLOUDFLARE_DOMAIN = cloudflareUrl
+      window.PUBLIC_CLOUDFLARE_DOMAIN = cloudflareUrl
     </script>
     <script is:inline src="/js/random-background.js"></script>
   </body>
