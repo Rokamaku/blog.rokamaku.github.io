@@ -27,3 +27,6 @@ pnpm-debug.log*
 
 # Obsidian
 .obsidian/
+
+# Test coverage
+coverage/
