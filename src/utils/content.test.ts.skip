@@ -1,0 +1,196 @@
+import { describe, expect, it } from "vitest";
+import { checkPostSlugDuplication } from "./content";
+
+// Type definition for test posts (avoiding astro:content import)
+type TestPost = {
+  id: string;
+  slug: string;
+  collection: "posts";
+  data: {
+    title: string;
+    lang: string;
+    abbrlink?: string;
+    published: Date;
+    tags: string[];
+  };
+  body: string;
+};
+
+describe("checkPostSlugDuplication", () => {
+  it("should detect duplicate slugs in the same language", async () => {
+    const posts: TestPost[] = [
+      {
+        id: "post1.md",
+        slug: "post1",
+        collection: "posts",
+        data: {
+          title: "Post 1",
+          lang: "en",
+          abbrlink: "duplicate-slug",
+          published: new Date("2024-01-01"),
+          tags: [],
+        },
+        body: "",
+      },
+      {
+        id: "post2.md",
+        slug: "post2",
+        collection: "posts",
+        data: {
+          title: "Post 2",
+          lang: "en",
+          abbrlink: "duplicate-slug",
+          published: new Date("2024-01-02"),
+          tags: [],
+        },
+        body: "",
+      },
+    ];
+
+    const duplicates = await checkPostSlugDuplication(posts);
+
+    expect(duplicates).toHaveLength(1);
+    expect(duplicates[0]).toContain('Duplicate slug "duplicate-slug"');
+    expect(duplicates[0]).toContain('"en" language');
+  });
+
+  it("should allow same slug across different languages", async () => {
+    const posts: TestPost[] = [
+      {
+        id: "post1.md",
+        slug: "post1",
+        collection: "posts",
+        data: {
+          title: "Post 1",
+          lang: "en",
+          abbrlink: "same-slug",
+          published: new Date("2024-01-01"),
+          tags: [],
+        },
+        body: "",
+      },
+      {
+        id: "post2.md",
+        slug: "post2",
+        collection: "posts",
+        data: {
+          title: "Post 2",
+          lang: "vi",
+          abbrlink: "same-slug",
+          published: new Date("2024-01-02"),
+          tags: [],
+        },
+        body: "",
+      },
+    ];
+
+    const duplicates = await checkPostSlugDuplication(posts);
+
+    expect(duplicates).toHaveLength(0);
+  });
+
+  it("should use id when abbrlink is not provided", async () => {
+    const posts: TestPost[] = [
+      {
+        id: "duplicate-id.md",
+        slug: "duplicate-id",
+        collection: "posts",
+        data: {
+          title: "Post 1",
+          lang: "en",
+          published: new Date("2024-01-01"),
+          tags: [],
+        },
+        body: "",
+      },
+      {
+        id: "duplicate-id.md",
+        slug: "duplicate-id",
+        collection: "posts",
+        data: {
+          title: "Post 2",
+          lang: "en",
+          published: new Date("2024-01-02"),
+          tags: [],
+        },
+        body: "",
+      },
+    ];
+
+    const duplicates = await checkPostSlugDuplication(posts);
+
+    expect(duplicates).toHaveLength(1);
+    expect(duplicates[0]).toContain('Duplicate slug "duplicate-id.md"');
+  });
+
+  it("should detect duplicates in universal posts (empty lang)", async () => {
+    const posts: TestPost[] = [
+      {
+        id: "post1.md",
+        slug: "post1",
+        collection: "posts",
+        data: {
+          title: "Post 1",
+          lang: "",
+          abbrlink: "universal-slug",
+          published: new Date("2024-01-01"),
+          tags: [],
+        },
+        body: "",
+      },
+      {
+        id: "post2.md",
+        slug: "post2",
+        collection: "posts",
+        data: {
+          title: "Post 2",
+          lang: "",
+          abbrlink: "universal-slug",
+          published: new Date("2024-01-02"),
+          tags: [],
+        },
+        body: "",
+      },
+    ];
+
+    const duplicates = await checkPostSlugDuplication(posts);
+
+    expect(duplicates).toHaveLength(1);
+    expect(duplicates[0]).toContain("universal post");
+  });
+
+  it("should return empty array when no duplicates exist", async () => {
+    const posts: TestPost[] = [
+      {
+        id: "post1.md",
+        slug: "post1",
+        collection: "posts",
+        data: {
+          title: "Post 1",
+          lang: "en",
+          abbrlink: "unique-slug-1",
+          published: new Date("2024-01-01"),
+          tags: [],
+        },
+        body: "",
+      },
+      {
+        id: "post2.md",
+        slug: "post2",
+        collection: "posts",
+        data: {
+          title: "Post 2",
+          lang: "en",
+          abbrlink: "unique-slug-2",
+          published: new Date("2024-01-02"),
+          tags: [],
+        },
+        body: "",
+      },
+    ];
+
+    const duplicates = await checkPostSlugDuplication(posts);
+
+    expect(duplicates).toHaveLength(0);
+  });
+});

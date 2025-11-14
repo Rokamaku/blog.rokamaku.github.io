@@ -1,4 +1,4 @@
-import type { AttributifyAttributes } from "@unocss/preset-attributify";
+import type { AttributifyAttributes } from '@unocss/preset-attributify'
 
 declare global {
   namespace astroHTML.JSX {
@@ -6,14 +6,14 @@ declare global {
   }
 
   interface Document {
-    startViewTransition: (updateCallback: () => void) => ViewTransition;
+    startViewTransition: (updateCallback: () => void) => ViewTransition
   }
 
   interface ViewTransition {
-    finished: Promise<void>;
-    ready: Promise<void>;
-    updateCallbackDone: Promise<void>;
+    finished: Promise<void>
+    ready: Promise<void>
+    updateCallbackDone: Promise<void>
   }
 }
 
-export {};
+export {}
