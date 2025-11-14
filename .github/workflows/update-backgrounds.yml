@@ -3,7 +3,7 @@ name: Update Background Images
 on:
   push:
     paths:
-      - "public/images/backgrounds/**"
+      - 'public/images/backgrounds/**'
   workflow_dispatch: # Allow manual triggering
 
 jobs:
@@ -18,7 +18,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: "20"
+          node-version: '20'
           cache: yarn
 
       - name: Scan background images

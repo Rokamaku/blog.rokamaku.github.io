@@ -1,50 +1,50 @@
-import type { CollectionEntry } from "astro:content";
-import { defaultLocale, themeConfig } from "@/config";
-import { ui } from "@/i18n/ui";
-import { generateDescription } from "@/utils/description";
-import rss from "@astrojs/rss";
-import { getCollection } from "astro:content";
-import MarkdownIt from "markdown-it";
-import sanitizeHtml from "sanitize-html";
+import type { CollectionEntry } from 'astro:content'
+import { defaultLocale, themeConfig } from '@/config'
+import { ui } from '@/i18n/ui'
+import { generateDescription } from '@/utils/description'
+import rss from '@astrojs/rss'
+import { getCollection } from 'astro:content'
+import MarkdownIt from 'markdown-it'
+import sanitizeHtml from 'sanitize-html'
 
-const parser = new MarkdownIt();
-const { title, description, url } = themeConfig.site;
-const followConfig = themeConfig.seo?.follow;
+const parser = new MarkdownIt()
+const { title, description, url } = themeConfig.site
+const followConfig = themeConfig.seo?.follow
 
 interface GenerateRSSOptions {
-  lang?: string;
+  lang?: string
 }
 
 export async function generateRSS({ lang }: GenerateRSSOptions = {}) {
-  const currentUI =
-    ui[lang as keyof typeof ui] || ui[defaultLocale as keyof typeof ui];
-  const siteTitle = themeConfig.site.i18nTitle ? currentUI.title : title;
+  const currentUI
+    = ui[lang as keyof typeof ui] || ui[defaultLocale as keyof typeof ui]
+  const siteTitle = themeConfig.site.i18nTitle ? currentUI.title : title
   const siteDescription = themeConfig.site.i18nTitle
     ? currentUI.description
-    : description;
+    : description
 
   // Get posts for specific language (including universal posts and default language when lang is undefined)
   const posts = await getCollection(
-    "posts",
-    ({ data }: { data: CollectionEntry<"posts">["data"] }) =>
-      !data.draft &&
-      (data.lang === lang ||
-        data.lang === "" ||
-        (lang === undefined && data.lang === defaultLocale)),
-  );
+    'posts',
+    ({ data }: { data: CollectionEntry<'posts'>['data'] }) =>
+      !data.draft
+      && (data.lang === lang
+        || data.lang === ''
+        || (lang === undefined && data.lang === defaultLocale)),
+  )
 
   // Sort posts by published date in descending order
   const sortedPosts = [...posts].sort(
     (a, b) =>
-      new Date(b.data.published).getTime() -
-      new Date(a.data.published).getTime(),
-  );
+      new Date(b.data.published).getTime()
+        - new Date(a.data.published).getTime(),
+  )
 
   return rss({
     title: siteTitle,
     site: lang ? `${url}/${lang}` : url,
     description: siteDescription,
-    stylesheet: "/rss/rss-style.xsl",
+    stylesheet: '/rss/rss-style.xsl',
     customData: `
     <copyright>Copyright © ${new Date().getFullYear()} ${themeConfig.site.author}</copyright>
     <language>${lang || themeConfig.global.locale}</language>
@@ -55,23 +55,23 @@ export async function generateRSS({ lang }: GenerateRSSOptions = {}) {
           <feedId>${followConfig.feedID}</feedId>
           <userId>${followConfig.userID}</userId>
         </follow_challenge>`
-        : ""
+        : ''
     }
   `.trim(),
-    items: sortedPosts.map((post: CollectionEntry<"posts">) => ({
+    items: sortedPosts.map((post: CollectionEntry<'posts'>) => ({
       title: post.data.title,
       // Generate URL with language prefix and abbrlink/slug
       link: new URL(
-        `${post.data.lang !== defaultLocale && post.data.lang !== "" ? `${post.data.lang}/` : ""}posts/${post.data.abbrlink || post.id}/`,
+        `${post.data.lang !== defaultLocale && post.data.lang !== '' ? `${post.data.lang}/` : ''}posts/${post.data.abbrlink || post.id}/`,
         url,
       ).toString(),
-      description: generateDescription(post, "rss"),
+      description: generateDescription(post, 'rss'),
       pubDate: post.data.published,
       content: post.body
         ? sanitizeHtml(parser.render(post.body), {
-            allowedTags: sanitizeHtml.defaults.allowedTags.concat(["img"]),
+            allowedTags: sanitizeHtml.defaults.allowedTags.concat(['img']),
           })
-        : "",
+        : '',
     })),
-  });
+  })
 }

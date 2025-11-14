@@ -42,11 +42,11 @@ Update the R2 bucket URL in `public/js/config.js`:
 ```js
 const config = {
   // If using a custom domain:
-  r2BucketUrl: "https://YOUR_DOMAIN",
+  r2BucketUrl: 'https://YOUR_DOMAIN',
 
   // Or if using the default R2 domain:
   // r2BucketUrl: 'https://YOUR_BUCKET_NAME.YOUR_ACCOUNT_ID.r2.dev',
-};
+}
 ```
 
 ## How It Works

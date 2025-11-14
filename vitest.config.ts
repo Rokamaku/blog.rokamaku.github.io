@@ -1,23 +1,23 @@
-import { getViteConfig } from "astro/config";
+import { getViteConfig } from 'astro/config'
 
 export default getViteConfig({
   test: {
     globals: true,
-    environment: "happy-dom",
+    environment: 'happy-dom',
     coverage: {
-      provider: "v8",
-      reporter: ["text", "json", "html"],
+      provider: 'v8',
+      reporter: ['text', 'json', 'html'],
       exclude: [
-        "node_modules/**",
-        "dist/**",
-        ".astro/**",
-        "**/*.config.*",
-        "**/*.d.ts",
-        "**/env.d.ts",
-        "**/.github/**",
-        "**/public/**",
-        "**/assets/**",
+        'node_modules/**',
+        'dist/**',
+        '.astro/**',
+        '**/*.config.*',
+        '**/*.d.ts',
+        '**/env.d.ts',
+        '**/.github/**',
+        '**/public/**',
+        '**/assets/**',
       ],
     },
   },
-});
+})

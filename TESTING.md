@@ -81,20 +81,20 @@ Configuration is in `vitest.config.ts`.
 ### Example Test Structure
 
 ```typescript
-import { describe, expect, it } from "vitest";
-import { yourFunction } from "./your-module";
+import { describe, expect, it } from 'vitest'
+import { yourFunction } from './your-module'
 
-describe("yourFunction", () => {
-  it("should handle basic case", () => {
-    const result = yourFunction("input");
-    expect(result).toBe("expected output");
-  });
+describe('yourFunction', () => {
+  it('should handle basic case', () => {
+    const result = yourFunction('input')
+    expect(result).toBe('expected output')
+  })
 
-  it("should handle edge case", () => {
-    const result = yourFunction("");
-    expect(result).toBe("");
-  });
-});
+  it('should handle edge case', () => {
+    const result = yourFunction('')
+    expect(result).toBe('')
+  })
+})
 ```
 
 ### Testing Guidelines

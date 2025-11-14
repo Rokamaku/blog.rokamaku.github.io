@@ -3,80 +3,81 @@
  * Run with: node .github/scripts/add-config-to-html.js
  */
 
-const fs = require("node:fs");
-const path = require("node:path");
+const fs = require('node:fs')
+const path = require('node:path')
 
 // Directories to scan for HTML files
-const directories = ["public", "dist"];
+const directories = ['public', 'dist']
 
 // Find HTML files in the given directories
 function findHtmlFiles(dir) {
-  const results = [];
+  const results = []
 
   if (!fs.existsSync(dir)) {
-    console.log(`Directory ${dir} does not exist, skipping.`);
-    return results;
+    console.log(`Directory ${dir} does not exist, skipping.`)
+    return results
   }
 
-  const items = fs.readdirSync(dir, { withFileTypes: true });
+  const items = fs.readdirSync(dir, { withFileTypes: true })
 
   for (const item of items) {
-    const itemPath = path.join(dir, item.name);
+    const itemPath = path.join(dir, item.name)
 
     if (item.isDirectory()) {
-      results.push(...findHtmlFiles(itemPath));
-    } else if (item.isFile() && item.name.endsWith(".html")) {
-      results.push(itemPath);
+      results.push(...findHtmlFiles(itemPath))
+    }
+    else if (item.isFile() && item.name.endsWith('.html')) {
+      results.push(itemPath)
     }
   }
 
-  return results;
+  return results
 }
 
 // Add config.js to HTML files before random-background.js
 function addConfigToHtml(filePath) {
-  let content = fs.readFileSync(filePath, "utf8");
+  let content = fs.readFileSync(filePath, 'utf8')
 
   // Check if random-background.js is included in the file
   if (
-    content.includes("random-background.js") &&
-    !content.includes("config.js")
+    content.includes('random-background.js')
+    && !content.includes('config.js')
   ) {
     // Add config.js before random-background.js
     content = content.replace(
       /<script.*?src=["'](.+?)random-background\.js["'].*?><\/script>/i,
       '<script src="/js/config.js"></script>\n    $&',
-    );
+    )
 
     // Write the modified content back to the file
-    fs.writeFileSync(filePath, content);
-    console.log(`✅ Added config.js to ${filePath}`);
-    return true;
+    fs.writeFileSync(filePath, content)
+    console.log(`✅ Added config.js to ${filePath}`)
+    return true
   }
 
-  return false;
+  return false
 }
 
 // Main function
 function main() {
-  let htmlFiles = [];
-  let modifiedFiles = 0;
+  const htmlFiles = []
+  let modifiedFiles = 0
 
   // Find all HTML files
   for (const dir of directories) {
-    htmlFiles.push(...findHtmlFiles(dir));
+    htmlFiles.push(...findHtmlFiles(dir))
   }
 
-  console.log(`Found ${htmlFiles.length} HTML files to process.`);
+  console.log(`Found ${htmlFiles.length} HTML files to process.`)
 
   // Process each HTML file
   for (const file of htmlFiles) {
     if (addConfigToHtml(file)) {
-      modifiedFiles++;
+      modifiedFiles++
     }
   }
 
-  console.log(`\nModified ${modifiedFiles} HTML files to include config.js.`);
+  console.log(`\nModified ${modifiedFiles} HTML files to include config.js.`)
 
   if (modifiedFiles === 0) {
     console.log(`
@@ -89,8 +90,8 @@ You may need to manually add the config.js script before random-background.js in
 
 <script src="/js/config.js"></script>
 <script src="/js/random-background.js"></script>
-`);
+`)
   }
 }
 
-main();
+main()
