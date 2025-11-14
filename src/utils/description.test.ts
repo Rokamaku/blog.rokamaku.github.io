@@ -8,13 +8,45 @@ type TestPost = {
   collection: "posts";
   data: {
     title: string;
-    description?: string;
-    lang: string;
     published: Date;
+    description: string;
+    updated?: Date;
     tags: string[];
+    draft: boolean;
+    pin: number;
+    toc: boolean;
+    lang: string;
+    abbrlink: string;
   };
   body: string;
 };
+
+// Helper function to create test posts with default values
+function createTestPost(overrides: {
+  body?: string;
+  title?: string;
+  description?: string;
+  lang?: string;
+  tags?: string[];
+}): TestPost {
+  return {
+    id: "test-post.md",
+    slug: "test-post",
+    collection: "posts",
+    data: {
+      title: overrides.title || "Test Post",
+      published: new Date("2024-01-01"),
+      description: overrides.description || "",
+      tags: overrides.tags || [],
+      draft: false,
+      pin: 0,
+      toc: true,
+      lang: overrides.lang || "en",
+      abbrlink: "",
+    },
+    body: overrides.body || "",
+  };
+}
 
 describe("generateExcerpt", () => {
   describe("length handling", () => {
@@ -208,55 +240,29 @@ describe("generateExcerpt", () => {
 
 describe("generateDescription", () => {
   it("should return existing description when provided", () => {
-    const post: TestPost = {
-      id: "test-post.md",
-      slug: "test-post",
-      collection: "posts",
-      data: {
-        title: "Test Post",
-        description: "Custom description",
-        lang: "en",
-        published: new Date("2024-01-01"),
-        tags: [],
-      },
+    const post = createTestPost({
+      description: "Custom description",
       body: "This is the post body content that should be ignored.",
-    };
+    });
 
     const description = generateDescription(post, "list");
     expect(description).toBe("Custom description");
   });
 
   it("should generate description from body when no description provided", () => {
-    const post: TestPost = {
-      id: "test-post.md",
-      slug: "test-post",
-      collection: "posts",
-      data: {
-        title: "Test Post",
-        lang: "en",
-        published: new Date("2024-01-01"),
-        tags: [],
-      },
+    const post = createTestPost({
       body: "This is the post body content that will be used for the description.",
-    };
+    });
 
     const description = generateDescription(post, "list");
     expect(description).toContain("post body content");
   });
 
   it("should use default locale when lang is empty", () => {
-    const post: TestPost = {
-      id: "test-post.md",
-      slug: "test-post",
-      collection: "posts",
-      data: {
-        title: "Test Post",
-        lang: "", // Empty lang should use defaultLocale
-        published: new Date("2024-01-01"),
-        tags: [],
-      },
+    const post = createTestPost({
+      lang: "", // Empty lang should use defaultLocale
       body: "This is a test post with universal language.",
-    };
+    });
 
     const description = generateDescription(post, "list");
     expect(description).toContain("test post");
@@ -264,18 +270,9 @@ describe("generateDescription", () => {
 
   it("should respect the scene parameter", () => {
     const longBody = "This is a very long post body. ".repeat(50);
-    const post: TestPost = {
-      id: "test-post.md",
-      slug: "test-post",
-      collection: "posts",
-      data: {
-        title: "Test Post",
-        lang: "en",
-        published: new Date("2024-01-01"),
-        tags: [],
-      },
+    const post = createTestPost({
       body: longBody,
-    };
+    });
 
     const listDescription = generateDescription(post, "list");
     const ogDescription = generateDescription(post, "og");
@@ -285,18 +282,9 @@ describe("generateDescription", () => {
   });
 
   it("should handle empty body", () => {
-    const post: TestPost = {
-      id: "test-post.md",
-      slug: "test-post",
-      collection: "posts",
-      data: {
-        title: "Test Post",
-        lang: "en",
-        published: new Date("2024-01-01"),
-        tags: [],
-      },
+    const post = createTestPost({
       body: "",
-    };
+    });
 
     const description = generateDescription(post, "list");
     expect(description).toBe("");
