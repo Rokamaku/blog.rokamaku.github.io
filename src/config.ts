@@ -15,7 +15,7 @@ export const themeConfig: ThemeConfig = {
     // author name
     author: 'rokamaku',
     // site url
-    url: 'https://rokamaku.github.io',
+    url: 'https://rokamaku.dev',
     // favicon url
     // recommended formats: svg, png or ico
     favicon: '/icon/favicon.ico', // or https://example.com/favicon.svg
